@@ -10,7 +10,16 @@ app.use(cors({
 }));
 app.use(express.json());
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+let ai;
+function getAI() {
+  if (!ai) {
+    if (!process.env.GEMINI_API_KEY) {
+      throw new Error('GEMINI_API_KEY non configurata');
+    }
+    ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+  }
+  return ai;
+}
 
 // Style presets
 const styleMap = {
@@ -39,7 +48,7 @@ app.post('/generate', async (req, res) => {
 
     console.log(`[generate] Starting video generation: "${prompt.substring(0, 80)}..." style=${style} aspect=${aspectRatio}`);
 
-    const operation = await ai.models.generateVideos({
+    const operation = await getAI().models.generateVideos({
       model: 'veo-3.1-generate-preview',
       prompt: fullPrompt,
       config: {
@@ -67,7 +76,7 @@ app.get('/status', async (req, res) => {
       return res.status(400).json({ error: 'operationName richiesto (param: op)' });
     }
 
-    const operation = await ai.operations.get({ operation: operationName });
+    const operation = await getAI().operations.get({ operation: operationName });
 
     if (!operation.done) {
       return res.json({ status: 'processing' });
